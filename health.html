@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<!-- Bootstrap CSS -->
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+		<title>Exploring correlations between health outcomes and poverty indicators</title>
+	</head>
+	<body onload="init()">
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+		<script src="http://d3js.org/d3.v5.min.js"></script>
+
+		<!-- Page bar -->
+		<nav style="padding: 10px;">
+			<ul class="pagination">
+				<li class="page-item"><a class="page-link" onclick="init()">1</a></li>
+				<li class="page-item"><a class="page-link" onclick="two()">2</a></li>
+				<li class="page-item"><a class="page-link" onclick="three()">3</a></li>
+				<li class="page-item"><a class="page-link" onclick="four()">4</a></li>
+				<li class="page-item"><a class="page-link" onclick="five()">5</a></li>
+				<li class="page-item"><a class="page-link" onclick="six()">6</a></li>
+			</ul>
+		</nav>
+
+		<h3>Exploring correlations between health outcomes and poverty indicators</h3>
+		<svg class="chart" width=1100 height=700></svg>
+		<div id="tooltip" style="opacity: 0; position: absolute; background: lightsteelblue; padding: 5px;border-radius: 8px;"></div>
+		<div id="textbox" style="position: absolute; background: lightsteelblue; padding: 5px;border-radius: 8px; top: 30px; left: 1100px; margin: 50px;"></div>
+		<div id="legend" style="opacity: 0; position: absolute; background: lightsteelblue; padding: 5px;border-radius: 8px; top: 180px; left: 130px;"></div>
+
+		<script type="text/javascript">
+		var plot1Width = 1000;
+		var plot1Height = 600;
+		var wspMargin = 30;
+		var yAxisMargin = 40;
+
+		async function init() {
+			const health = await d3.csv("https://alexaddy.info/health.csv");
+			d3.select(".chart").html("");
+
+			// Scale functions
+			var plot1X = d3.scaleLinear().domain([15, 33]).range([0, plot1Width]);
+			var plot1Y = d3.scaleLinear().domain([20, 40]).range([plot1Height, 0]);
+
+
+			// Vertical axis
+			d3.select(".chart").append("g")
+			.attr("transform", "translate(" + (wspMargin + yAxisMargin) + "," + wspMargin + ")")
+			.call(d3.axisLeft(plot1Y));
+
+			d3.select(".chart").append("text")
+			.attr("transform", "translate(" + wspMargin + "," + (plot1Height + wspMargin)/2 + ") rotate(-90)")
+      		.style("text-anchor", "middle")
+      		.text("Obesity [% of adults aged >= 18 years]");
+
+
+			// Horizontal axis
+			d3.select(".chart").append("g")
+			.attr("transform", "translate(" + (wspMargin + yAxisMargin) + "," + (plot1Height + wspMargin) + ")")
+			.call(d3.axisBottom(plot1X));
+
+			d3.select(".chart").append("text")
+			.attr("transform", "translate(" + ((plot1Width + wspMargin + yAxisMargin)/2) + "," + (plot1Height + wspMargin + 40) + ")")
+      		.style("text-anchor", "middle")
+      		.text("No leisure-time physical activity [% of adults aged >= 18 indicating]");
+
+
+      		// Plot 1 Data
+      		var tooltip = d3.select("#tooltip");
+			d3.select(".chart").append("g").attr("transform", "translate(" + (wspMargin + yAxisMargin) + "," + wspMargin + ")")
+			.selectAll("circle")
+			.data(health).enter().append("circle")
+			.attr("r", 5)
+			.attr("fill", "black")
+			.attr("cx", function(d) {
+				return plot1X(d.Leisure);
+			})
+			.attr("cy", function(d) {
+				return plot1Y(d.Obesity);
+			})
+			.on("mouseover", function(d) {
+				tooltip.transition().duration(400).style("opacity", 1);
+				tooltip.style("top", (d3.event.pageY + 15) +"px")
+				.style("left", (d3.event.pageX + 15) +"px")
+				.html("<b>" + d.LocationDesc + " (" + d.Region + ")</b></br>Obesity: " + d.Obesity + "%</br>No Leisure Time: " + d.Leisure + "%</br>Poverty: " + d.Poverty + "%");
+			})
+			.on("mouseout", function(d) {
+				tooltip.transition().duration(400).style("opacity", 0);
+			});
+
+			d3.select(".chart").selectAll("circle")
+			.filter(function(d) {return d.LocationAbbr == "ND"})
+			.each(function (d, i) {
+				d3.select("#tooltip").transition().duration(1000).style("opacity", 1);
+				d3.select("#tooltip").style("top", "320px")
+				.style("left", "500px")
+				.html("<b>" + d.LocationDesc + " (" + d.Region + ")</b></br>Obesity: " + d.Obesity + "%</br>No Leisure Time: " + d.Leisure + "%</br>Poverty: " + d.Poverty + "%");
+				d3.select("#tooltip").transition().delay(1000).duration(1000).style("opacity", 0);
+				d3.select("#tooltip").transition().delay(2000).duration(1000).style("opacity", 1);
+				d3.select("#tooltip").transition().delay(3000).duration(1000).style("opacity", 0);
+			});
+
+
+			d3.select("#textbox").html("<b>1.</b> This plot of data from the CDC's U.S. Chronic Disease Indicators compares the rates of obesity to the number of survey respondants that indicated that they do not have any leisure-time physical activity for each state in the continental United States, including the District of Columbia.");
+		}
+
+		function two() {
+			d3.select(".chart").append("line")
+			.style("opacity", 0)
+			.style("stroke", "black")
+			.style("stroke-dasharray", "3, 3")
+			.attr("x1", 200).attr("y1", 500)
+			.attr("x2", 1000).attr("y2", 100)
+			.transition().duration(400).style("opacity", 1);
+
+			d3.select(".chart").selectAll("circle").attr("fill", "black")
+			.filter(function(d) {return d.LocationAbbr == "ND" ||  d.LocationAbbr == "NJ"})
+			.transition().duration(400)
+			.attr("fill", "blue");
+
+			d3.select("#textbox").html("<b>2.</b> A cursory visual inspection suggests a positive correlation between lack of leisure-time physical activity and rates of obesity, but the correlation appears to be weak. There are examples of states with larger obese populations and more leisure-time activity, such as North Dakoda, as well as states with relatively low levels of obesity but also low levels of activity, such as New Jersey, shown here in blue.");
+		}
+
+		function three() {
+			d3.selectAll("line").transition().duration(400).style("opacity", 0).remove();
+			var color = d3.scaleOrdinal(d3.schemeCategory10);
+			d3.select(".chart").selectAll("circle").transition().duration(800)
+			.attr("fill", function(d) {
+				switch (d.Region) {
+					case 'West': return color(0);
+					case 'South': return color(1);
+					case 'Northeast': return color(2);
+					case 'Midwest': return color(3);
+					default: return 'blue';
+				}
+			});
+
+			d3.select("#legend").html("<svg width=\"20\" height=\"20\"><rect width=\"20\" height=\"20\" style=\"fill:" + color(0) + ";stroke-width:3 stroke:rgb(0,0,0)\"/></svg> West</br><svg width=\"20\" height=\"20\"><rect width=\"20\" height=\"20\" style=\"fill:" + color(1) + ";stroke-width:3 stroke:rgb(0,0,0)\"/></svg> South</br><svg width=\"20\" height=\"20\"><rect width=\"20\" height=\"20\" style=\"fill:" + color(2) + ";stroke-width:3 stroke:rgb(0,0,0)\"/></svg> Northeast</br><svg width=\"20\" height=\"20\"><rect width=\"20\" height=\"20\" style=\"fill:" + color(3) + ";stroke-width:3 stroke:rgb(0,0,0)\"/></svg> Midwest").transition().duration(400).style("opacity", 1);
+			
+			d3.select("#textbox").html("<b>3.</b> To find a stronger correlation, we update the states with color corresponding to their U.S. Census Bureau region.");
+		}
+
+		function four() {
+			d3.selectAll("circle").filter(function(d) {
+				return d.Obesity < 33;
+			})
+			.transition().duration(400)
+			.attr("fill", "black");
+
+			d3.select("#textbox").html("<b>4.</b> When we filter for states that have an obesity rate higher than 33% of adults, it becomes evident that higher obesity rates are found in the midwest and south. States in the south are exclusively the most extreme combination of high obesity rates and low levels of leisure-time physical activity. What is not evident, though, is why there is such a large range of physical activity among these high-obesity rates.");
+		}
+
+		function five() {
+			var rScale = d3.scaleLinear().domain([7, 20]).range([3, 30]);
+			var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+			d3.select(".chart").selectAll("circle").transition().duration(800)
+			.attr("r", function(d) {
+				return rScale(d.Poverty)**1.1;
+			})
+			.attr("fill", function(d) {
+				switch (d.Region) {
+					case 'West': return color(0);
+					case 'South': return color(1);
+					case 'Northeast': return color(2);
+					case 'Midwest': return color(3);
+					default: return 'blue';
+				}
+			});
+			
+			d3.select(".chart").selectAll("circle").attr("opacity", 0.6);
+
+			d3.select("#textbox").html("<b>5.</b> We further enrich the data with the poverty rates for each of the states. Here, the size of the states' circles correspond to the percent of the population living below the federal poverty line.");
+		}
+
+		function six() {
+			d3.selectAll("circle").filter(function(d) {
+				return d.Poverty <= 14.1;
+			})
+			.transition().duration(400)
+			.attr("fill", "black");
+
+			d3.select("#textbox").html("<b>6.</b> When we filter for the states that have a poverty rate above 14%, a pattern becomes clear. States with the highest poverty rates are also the states with the least amount of leisure-time physical activity and the highest obesity rates. Additionally, all but one of these states are located in the south. With this insight, we can conclude that poverty is a correlate of high rates of obesity.");
+		}
+
+		</script>
+	</body>
+</html>
